@@ -1,8 +1,14 @@
 
 package main 
 
-import "fmt"
+import (
+    "fmt"
+
+    g2api "github.com/AutoLogicTechnology/Gate2/types"
+)
 
 func main () {
-    fmt.Println("Hello.")
+    a := g2api.Gate{}
+
+    fmt.Printf("Hello: %+v\n", a)
 }
