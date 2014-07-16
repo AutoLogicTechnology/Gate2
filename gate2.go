@@ -31,7 +31,7 @@ func main () {
         r, err := g.CheckCode(currentcode)
 
         if err != nil {
-            fmt.Println("Error checking code: %s", err)
+            fmt.Printf("Error checking code: %s\n", err)
         }
 
         if r {
