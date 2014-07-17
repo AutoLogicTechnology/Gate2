@@ -5,7 +5,6 @@ import (
     "encoding/base32"
     "encoding/base64"
     "io/ioutil"
-    "fmt"
 
     otp "github.com/dgryski/dgoogauth"
     "code.google.com/p/rsc/qr"
@@ -38,16 +37,37 @@ func NewGate (userid string) (g *Gate) {
             HotpCounter: GATE_HOTP_COUNTER,
         },
     }
-    
-    code, _ := qr.Encode(g.OTP.ProvisionURI(g.UserID), qr.Q)
-    g.QRCode = base64.StdEncoding.EncodeToString(code.PNG())
 
     return g
 }
 
-func (g *Gate) WritePng () {
-    q, _ := base64.StdEncoding.DecodeString(g.QRCode)
-    ioutil.WriteFile(fmt.Sprintf("%s.png", g.UserID), q, 0644)
+func NewGateAndQRCode (userid string) (g *Gate) {
+    g = NewGate(userid)
+
+    code, _ := qr.Encode(g.OTP.ProvisionURI(g.UserID), qr.Q)
+    g.QRCode = base64.StdEncoding.EncodeToString(code.PNG())
+
+    return g 
+}
+
+func NewGateWithCustomSecret (userid, usersecret string) (g *Gate) {
+    g = NewGateAndQRCode(userid)
+    g.UserSecret = usersecret
+
+    b32 := base32.StdEncoding.EncodeToString([]byte(usersecret))
+    g.OTP.Secret = b32 
+
+    return g 
+}
+
+func (g *Gate) WritePngToFile (filename string) (err error) {
+    q, err := base64.StdEncoding.DecodeString(g.QRCode)
+    if err != nil {
+        return err
+    }
+
+    ioutil.WriteFile(filename, q, 0644)
+    return nil 
 }
 
 func (g *Gate) CheckCode (password string) (result bool, err error) {

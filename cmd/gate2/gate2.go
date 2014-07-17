@@ -7,7 +7,7 @@ import (
     "log"
     "fmt"
 
-    g2 "github.com/AutoLogicTechnology/Gate2/types"
+    g2 "github.com/AutoLogicTechnology/Gate2/gate"
 )
 
 // Simple CLI tool for generating a new QR code
@@ -18,8 +18,8 @@ func main () {
     userid, _ := reader.ReadString('\n')
     userid = userid[:len(userid)-1]
 
-    g := g2.NewGate(userid)
-    g.WritePng()
+    g := g2.NewGateAndQRCode(userid)
+    g.WritePngToFile("my_qr_code.png")
 
     log.Printf("User Secret: %s", g.UserSecret)
 
