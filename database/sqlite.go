@@ -8,12 +8,7 @@ import (
     _ "github.com/mattn/go-sqlite3"
 )
 
-type GateSQLiteDatabase struct {
-   DataFile string 
-   Connection *sql.DB
-}
-
-func NewGateSQLiteDatabase (datafile string, purgeold bool) (*GateSQLiteDatabase, error) {
+func NewGateSQLiteDatabase (datafile string, purgeold bool) (*GateDatabase, error) {
     if purgeold {
         os.Remove(datafile)
     }
@@ -24,20 +19,8 @@ func NewGateSQLiteDatabase (datafile string, purgeold bool) (*GateSQLiteDatabase
         return &GateSQLiteDatabase{}, err 
     }
 
-    return &GateSQLiteDatabase{
-        DataFile: datafile, 
-        Connection: sql,
+    return &GateDatabase{
+        Database: datafile, 
+        Conn: sql,
     }, nil 
-}
-
-func (gdb *GateSQLiteDatabase) BuildStructure () (bool) {
-    return false
-}
-
-func (gdb *GateSQLiteDatabase) AddUser (userid string) (bool) {
-    return false
-}
-
-func (gdb *GateSQLiteDatabase) RemoveUser (userid string) (bool) {
-    return false 
 }

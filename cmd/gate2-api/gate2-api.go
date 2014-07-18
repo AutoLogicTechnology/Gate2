@@ -2,10 +2,11 @@
 package main 
 
 import (
-    // "log"
+    "log"
     "net/http"
     "encoding/json"
     "fmt"
+    "flag"
 
     "github.com/AutoLogicTechnology/Gate2/gate"
     "github.com/AutoLogicTechnology/Gate2/database"
@@ -14,9 +15,25 @@ import (
     "github.com/zenazn/goji/web"
 )
 
-var gates []*TotpIndexResponseGate
+var gdb *database.GateDatabase = nil 
 
 func main () {
+    var use_sqlite, use_mysql bool 
+
+    purge_db  := flag.Bool("purgedatabase", false, "Purge the database of any existing tables.")
+    sqlite_db := flag.String("sqlite3", "", "Use a SQLite database. Perfect for debugging and testing.")
+    // mysql_db  := flag.String("mysql", "", "Use a MySQL database. Provide a connection string such as: 'user:password@/dbname'")
+
+    flag.Parse()
+
+    if *sqlite_db != "" {
+        gdb, _ = database.NewGateSQLiteDatabase(*sqlite_db, *purgedatabase)
+    }
+
+    if gdb == nil {
+        log.Fatal("I need a database to work with.")
+    }
+
     goji.Get("/", Index)
 
     goji.Get("/totp", http.RedirectHandler("/totp/", 301))
@@ -25,10 +42,6 @@ func main () {
     goji.Post("/totp/:id", TotpCreateUser)
     goji.Delete("/totp/:id", TotpDeleteUser)
     goji.Put("/totp/:id", TotpUpdateUser)
-
-    web.C.Env["GATE_DATABASE"] = &database.GateSQLiteDatabase{
-        
-    }
 
     goji.Serve()
 }
