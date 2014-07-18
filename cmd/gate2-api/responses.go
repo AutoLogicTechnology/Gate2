@@ -6,9 +6,16 @@ type IndexResponse struct {
     Message string `json:"message"`
 }
 
+type TotpIndexResponseGate struct {
+    UserID string 
+    UserSecret string 
+}
+
 type TotpIndexResponse struct {
     HTTPCode int `json:"httpcode"`
     Message string `json:"message"`
+
+    Gates []*TotpIndexResponseGate `json:"gates"`
 }
 
 type TotpCreateUserResponse struct {

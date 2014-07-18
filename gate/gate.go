@@ -1,10 +1,11 @@
 
-package types
+package gate
 
 import (
     "encoding/base32"
     "encoding/base64"
     "io/ioutil"
+    "regexp"
 
     otp "github.com/dgryski/dgoogauth"
     "code.google.com/p/rsc/qr"
@@ -58,6 +59,16 @@ func NewGateWithCustomSecret (userid, usersecret string) (g *Gate) {
     g.OTP.Secret = b32 
 
     return g 
+}
+
+func IsValidUserId (userid string) (bool) {
+    r := regexp.MustCompile("^[a-zA-Z0-9._@-]+$")
+    return r.MatchString(userid)
+}
+
+func IsValidTOTPCode (totpcode string) (bool) {
+    r := regexp.MustCompile("^[0-9]{6}$")
+    return r.MatchString(totpcode)
 }
 
 func (g *Gate) WritePngToFile (filename string) (err error) {
