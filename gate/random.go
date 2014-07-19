@@ -1,5 +1,5 @@
 
-package helpers
+package gate
 
 import (
     "math/rand"
@@ -9,8 +9,8 @@ import (
 // This might be a poor means of doing this
 // Potentially better(?) ways have been found
 // online, but this seems random enough for now 
-func RandomString () (string) {
-    suitable := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!$%^&*()_-.,<>?'")
+func RandomString (string_range string) (string) {
+    suitable := []byte(string_range)
 
     r := rand.New(rand.NewSource(time.Now().UnixNano()))
     s := make([]byte, len(suitable))
@@ -22,3 +22,12 @@ func RandomString () (string) {
 
     return string(s)
 }
+
+func NewSecretCode () (string) {
+    return RandomString("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!$%^&*()_-.,<>?'")[:16]
+}
+
+func NewScratchCode () (string) {
+    return RandomString("0123456789")[:6]
+}
+

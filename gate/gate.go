@@ -9,7 +9,7 @@ import (
 
     otp "github.com/dgryski/dgoogauth"
     "code.google.com/p/rsc/qr"
-    "github.com/AutoLogicTechnology/Gate2/helpers"
+    // "github.com/AutoLogicTechnology/Gate2/helpers"
 )
 
 const (
@@ -19,24 +19,28 @@ const (
 
 type Gate struct {
     UserID string 
-    UserSecret string // raw version, for printing/debugging
+    UserSecret string 
+    ScratchCodes []string 
 
     OTP *otp.OTPConfig
     QRCode string 
 }
 
 func NewGate (userid string) (g *Gate) {
-    usersecret := helpers.RandomString()
-    b32 := base32.StdEncoding.EncodeToString([]byte(usersecret))
+    usersecret := NewSecretCode()
 
     g = &Gate{
         UserID: userid,
         UserSecret: usersecret,
         OTP: &otp.OTPConfig{
-            Secret: b32,
+            Secret: base32.StdEncoding.EncodeToString([]byte(usersecret)),
             WindowSize: GATE_WINDOW_SIZE,
             HotpCounter: GATE_HOTP_COUNTER,
         },
+    }
+
+    for i := 1; i <= 3; i ++ {
+        g.ScratchCodes = append(g.ScratchCodes, NewScratchCode())
     }
 
     return g

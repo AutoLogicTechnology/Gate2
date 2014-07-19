@@ -5,39 +5,56 @@ import (
     "log"
     "net/http"
     "encoding/json"
-    "fmt"
     "flag"
+    "io/ioutil"
+    "fmt"
 
     "github.com/AutoLogicTechnology/Gate2/gate"
-    "github.com/AutoLogicTechnology/Gate2/database"
+
+    "github.com/jinzhu/gorm"
+    _ "github.com/lib/pq"
+    _ "github.com/go-sql-driver/mysql"
+    _ "github.com/mattn/go-sqlite3"
 
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
 )
 
-var gdb *database.GateDatabase = nil 
+var g2config gate.GateConfiguration
+
+func configuration (filename string) {
+    data, err := ioutil.ReadFile(filename)
+
+    if err != nil {
+        log.Fatalf("Unable to open the given configuration file: %s\n", filename)
+    }
+
+    err = json.Unmarshal(data, &g2config)
+
+    if err != nil {
+        log.Fatalf("Unable to read configuration format for: %s: %s\n", filename, err)
+    }
+}
 
 func main () {
-    var use_sqlite, use_mysql bool 
+    var err error 
 
-    purge_db  := flag.Bool("purgedatabase", false, "Purge the database of any existing tables.")
-    sqlite_db := flag.String("sqlite3", "", "Use a SQLite database. Perfect for debugging and testing.")
-    // mysql_db  := flag.String("mysql", "", "Use a MySQL database. Provide a connection string such as: 'user:password@/dbname'")
-
+    configfile := flag.String("config", "./gate2.json", "Gate2 configuration file. JSON formatted.")
     flag.Parse()
 
-    if *sqlite_db != "" {
-        gdb, _ = database.NewGateSQLiteDatabase(*sqlite_db, *purgedatabase)
+    configuration(*configfile)
+
+    g2config.Database.Connection, err = gorm.Open(g2config.Database.Engine, g2config.Database.Href)
+
+    if g2config.Database.Purge {
+        g2config.Database.Connection.AutoMigrate(gate.User{})
+        g2config.Database.Connection.AutoMigrate(gate.QRCode{})
     }
 
-    if gdb == nil {
-        log.Fatal("I need a database to work with.")
+    if err != nil {
+        log.Fatalf("Issue opening database: %s: %s\n", g2config.Database.Href, err)
     }
 
-    goji.Get("/", Index)
-
-    goji.Get("/totp", http.RedirectHandler("/totp/", 301))
-    goji.Get("/totp/", TotpIndex)
     goji.Get("/totp/:id/:code", TotpValidateUser)
     goji.Post("/totp/:id", TotpCreateUser)
     goji.Delete("/totp/:id", TotpDeleteUser)
@@ -46,99 +63,102 @@ func main () {
     goji.Serve()
 }
 
-func Index (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := IndexResponse{
-        HTTPCode: 200,
-        Message: "Not Implemented Yet",
-    }
-
-    j, _ := json.Marshal(i)
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(j)
-}
-
-func TotpIndex (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := TotpIndexResponse{
-        HTTPCode: 200,
-        Message: "Current Gates",
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-
-    if len(gates) >= 1 {
-        for _, gate := range gates {
-            s := fmt.Sprintf("%s:%s", gate.UserID, gate.UserSecret)
-            i.Gates = append(i.Gates, &s)
-        }
-    }
-
-    j, _ := json.Marshal(i)
-    w.Write(j)
-}
-
 func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
-    i := TotpCreateUserResponse {
-        HTTPCode: 200,
-    }
+    i := TotpCreateUserResponse{}
 
     userid := c.URLParams["id"]
 
     if !gate.IsValidUserId(userid) {
-        http.Error(w, "Invalid user ID given", http.StatusBadRequest)
+        i.Message = "Invalid user ID given"
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
 
-    if haveuser(userid) {
-        http.Error(w, "User exists", http.StatusBadRequest)
+    var user gate.User 
+    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
+
+    if result.Error == nil {
+        i.Message = "That user already exists"
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
 
     newgate := gate.NewGateAndQRCode(userid)
-    gates = append(gates, &TotpIndexResponseGate{
+    newuser := gate.User{
+        Generation: 0,
         UserID: newgate.UserID,
         UserSecret: newgate.UserSecret,
-    })
+        QRCode: gate.QRCode{
+            Base64: newgate.QRCode,
+        },
+    }
+
+    for _, v := range newgate.ScratchCodes {
+        newuser.ScratchCodes = append(newuser.ScratchCodes, gate.ScratchCode{Code: v})
+    }
+
+    result = g2config.Database.Connection.Create(&newuser)
+
+    if result.Error != nil {
+        i.Message = fmt.Sprintf("Unable to add new user: %s (error: %s)", userid, result.Error)
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
+        return 
+    }
 
     i.Message = "User added to the database successfully."
+    i.QRCode = newuser.QRCode.Base64
 
-    j, _ := json.Marshal(i)
-    
-    w.Write(j)
+    w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     i := TotpValidateUserResponse {
-        HTTPCode: 200,
     }
 
     userid := c.URLParams["id"]
     totpcode := c.URLParams["code"]
 
     if !gate.IsValidUserId(userid) {
-        http.Error(w, "Invalid user ID given", http.StatusBadRequest)
+        i.Message = "Invalid user ID given"
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
 
     if !gate.IsValidTOTPCode(totpcode) {
-        http.Error(w, "Invalid TOTP code given", http.StatusBadRequest)
+        i.Message = "Invalid TOTP code given"
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
 
+    var user gate.User
+    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
 
+    if result.Error != nil {
+        i.Message = fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error)
+        http.Error(w, JSONResponse(i), http.StatusNotFound)
+        return 
+    }
 
-    j, _ := json.Marshal(i)
-    w.Write(j)
+    gate := gate.NewGateWithCustomSecret(userid, user.UserSecret)
+
+    isvalid, _ := gate.CheckCode(totpcode)
+
+    if !isvalid {
+        i.Message = "TOTP code is invalid"
+        http.Error(w, JSONResponse(i), http.StatusForbidden)
+        return 
+    }
+
+    i.Message = "TOTP code is valid"
+    w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := TotpDeleteUserResponse {
-        HTTPCode: 200,
-        Message: "Not Implemented Yet",
-    }
+    i := TotpDeleteUserResponse {Message: "Not Implemented Yet",}
 
     j, _ := json.Marshal(i)
     w.Header().Set("Content-Type", "application/json")
@@ -146,10 +166,7 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := TotpUpdateUserResponse {
-        HTTPCode: 200,
-        Message: "Not Implemented Yet",
-    }
+    i := TotpUpdateUserResponse {Message: "Not Implemented Yet",}
 
     j, _ := json.Marshal(i)
     w.Header().Set("Content-Type", "application/json")
