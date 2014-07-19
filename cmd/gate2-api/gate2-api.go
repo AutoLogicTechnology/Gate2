@@ -45,11 +45,9 @@ func main () {
     configuration(*configfile)
 
     g2config.Database.Connection, err = gorm.Open(g2config.Database.Engine, g2config.Database.Href)
-
-    if g2config.Database.Purge {
-        g2config.Database.Connection.AutoMigrate(gate.User{})
-        g2config.Database.Connection.AutoMigrate(gate.QRCode{})
-    }
+    g2config.Database.Connection.AutoMigrate(gate.User{})
+    g2config.Database.Connection.AutoMigrate(gate.QRCode{})
+    g2config.Database.Connection.AutoMigrate(gate.ScratchCode{})
 
     if err != nil {
         log.Fatalf("Issue opening database: %s: %s\n", g2config.Database.Href, err)
@@ -58,7 +56,6 @@ func main () {
     goji.Get("/totp/:id/:code", TotpValidateUser)
     goji.Post("/totp/:id", TotpCreateUser)
     goji.Delete("/totp/:id", TotpDeleteUser)
-    goji.Put("/totp/:id", TotpUpdateUser)
 
     goji.Serve()
 }
@@ -160,12 +157,6 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
 func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
     i := TotpDeleteUserResponse {Message: "Not Implemented Yet",}
-    w.Header().Set("Content-Type", "application/json")
-    w.Write([]byte(JSONResponse(i)))
-}
-
-func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := TotpUpdateUserResponse {Message: "Not Implemented Yet",}
     w.Header().Set("Content-Type", "application/json")
     w.Write([]byte(JSONResponse(i)))
 }
