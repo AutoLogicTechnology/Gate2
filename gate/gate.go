@@ -9,7 +9,6 @@ import (
 
     otp "github.com/dgryski/dgoogauth"
     "code.google.com/p/rsc/qr"
-    // "github.com/AutoLogicTechnology/Gate2/helpers"
 )
 
 const (

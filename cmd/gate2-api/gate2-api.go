@@ -159,16 +159,12 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
 func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
     i := TotpDeleteUserResponse {Message: "Not Implemented Yet",}
-
-    j, _ := json.Marshal(i)
     w.Header().Set("Content-Type", "application/json")
-    w.Write(j)
+    w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     i := TotpUpdateUserResponse {Message: "Not Implemented Yet",}
-
-    j, _ := json.Marshal(i)
     w.Header().Set("Content-Type", "application/json")
-    w.Write(j)
+    w.Write([]byte(JSONResponse(i)))
 }
