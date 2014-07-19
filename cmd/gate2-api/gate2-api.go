@@ -109,6 +109,7 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
     i.Message = "User added to the database successfully."
     i.QRCode = newuser.QRCode.Base64
+    i.ScratchCodes = newgate.ScratchCodes
 
     w.Write([]byte(JSONResponse(i)))
 }

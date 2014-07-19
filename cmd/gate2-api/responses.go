@@ -21,6 +21,7 @@ type TotpIndexResponse struct {
 type TotpCreateUserResponse struct {
     Message string `json:"message"`
     QRCode string `json:"qrcode"`
+    ScratchCodes []string `json:"scratchcodes"`
 }
 
 type TotpValidateUserResponse struct {
