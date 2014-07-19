@@ -70,7 +70,7 @@ func IsValidUserId (userid string) (bool) {
 }
 
 func IsValidTOTPCode (totpcode string) (bool) {
-    r := regexp.MustCompile("^[0-9]{6}$")
+    r := regexp.MustCompile("^[0-9]{6,8}$")
     return r.MatchString(totpcode)
 }
 
