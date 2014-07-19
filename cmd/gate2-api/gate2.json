@@ -1,6 +1,7 @@
 {
-	"database": {
-		"engine": "sqlite3",
-		"href": "./gates.sql",
-	}
+    "database": {
+        "engine": "sqlite3",
+        "href": "./gates.sql",
+        "purge": true
+    }
 }
