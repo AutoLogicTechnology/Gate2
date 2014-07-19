@@ -53,7 +53,7 @@ The API has been designed to offer these endpoints:
 
 The PUT HTTP verb is not included as the developer is expected to delete the target user and re-create their entry.
 
-## `:id` & `:code`
+## :id & :code
 
 The `:id` field can be basically anything that matches the regular expression `^[a-zA-Z0-9._@-]+$`, and `:code` must match `^[0-9]{6,8}$`.
 
