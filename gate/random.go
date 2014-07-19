@@ -28,6 +28,6 @@ func NewSecretCode () (string) {
 }
 
 func NewScratchCode () (string) {
-    return RandomString("0123456789")[:6]
+    return RandomString("0123456789")[:8]
 }
 
