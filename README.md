@@ -27,7 +27,7 @@ You will now have Gate2's API command in your `$GOPATH/bin` directory.
 
 Both are coming soon. A custom repository will be setup offering Deb and RPM packages.
 
-# Usage
+# Execution
 
 Using the Gate2 API is very easy. You simply define your configuration file as such:
 
@@ -42,6 +42,30 @@ Using the Gate2 API is very easy. You simply define your configuration file as s
 ```
 
 And save the file to a location of your choosing. Then you launch the API: `./gate2-api -config "path/to/config.file"`
+
+# Usage & JSON 
+
+The API has been designed to offer these endpoints:
+
+* GET: `/totp/:id/:code`
+* POST: `/totp/:id`
+* DELETE: `/totp/:id`
+
+The PUT HTTP verb is not included as the developer is expected to delete the target user and re-create their entry.
+
+## `:id` & `:code`
+
+The `:id` field can be basically anything that matches the regular expression `^[a-zA-Z0-9._@-]+$`, and `:code` must match `^[0-9]{6,8}$`.
+
+## Responses
+
+All responses are returned as JSON. XML is not an option. An example of POSTing to `/totp/:id` can be seen below. Not that the `qrcode` field has been left truncated due to the size of a Base63 encoded PNG file.
+
+```json
+{"message":"User added to the database successfully.","qrcode":"...","scratchcodes":["18036472","16892073","91460278"]}
+```
+
+This structure is very likely to change in the near future.
 
 # Bugs
 
