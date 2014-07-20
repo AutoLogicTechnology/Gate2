@@ -60,7 +60,7 @@ func main () {
     goji.Get("/totp/:id/:code", TotpValidateUser)
     goji.Post("/totp/:id", TotpCreateUser)
     goji.Delete("/totp/:id", TotpDeleteUser)
-    goji.Put("/top/:id", TotpUpdateUser)
+    goji.Put("/totp/:id", TotpUpdateUser)
 
     goji.Get("/status/:id", StatusUser)
 
@@ -73,7 +73,6 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     i := TotpCreateUserResponse{}
 
     userid := c.URLParams["id"]
-
     if !gate.IsValidUserId(userid) {
         i.Result = "Failure"
         i.Message = "Invalid user ID given"
@@ -220,7 +219,9 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    result := g2config.Database.Connection.Delete(&gate.User{UserID: userid})
+    var user gate.User 
+
+    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error != nil {
         i.Result = "Failure"
         i.Message = fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error)
@@ -228,14 +229,67 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
         return 
     }
 
+    g2config.Database.Connection.Delete(&user)
+    g2config.Database.Connection.Delete(&gate.QRCode{UserId: user.Id})
+    g2config.Database.Connection.Delete(&gate.ScratchCode{UserId: user.Id})
+
     i.Result = "Success"
     i.Message = "The user has been deleted"
     w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
-    i := TotpDeleteUserResponse{Result: "Failure", Message: "Not Implemented Yet",}
     w.Header().Set("Content-Type", "application/json")
+
+    i := TotpUpdateUserResponse{}
+    
+    userid := c.URLParams["id"]
+    if !gate.IsValidUserId(userid) {
+        i.Result = "Failure"
+        i.Message = "Invalid user ID given"
+        http.Error(w, JSONResponse(i), http.StatusBadRequest)
+        return
+    }
+
+    var user gate.User
+
+    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
+    if result.Error != nil {
+        i.Result = "Failure"
+        i.Message = fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error)
+        http.Error(w, JSONResponse(i), http.StatusNotFound)
+        return 
+    }
+
+    var codes []gate.ScratchCode
+
+    result = g2config.Database.Connection.Where(&gate.ScratchCode{UserId: user.Id}).Find(&codes)
+    if result.Error == nil {
+        for _, v := range codes {
+            g2config.Database.Connection.Delete(&v)
+        }
+    }
+
+    user.ScratchCodes = nil
+    g2config.Database.Connection.Delete(&user.QRCode)
+
+    g := gate.NewGateAndQRCode(user.UserID)
+    
+    user.Generation++
+    user.UserSecret = g.UserSecret
+    user.QRCode = gate.QRCode{UserId: user.Id, Base64: g.QRCode,}
+
+    for _, v := range g.ScratchCodes {
+        user.ScratchCodes = append(user.ScratchCodes, gate.ScratchCode{UserId: user.Id, Code: v,})
+    }
+
+    g2config.Database.Connection.Save(&user)
+
+    i.Result = "Success"
+    i.Message = "User updated with new a secret and scratch codes"
+    i.QRCode = g.QRCode
+    i.ScratchCodes = g.ScratchCodes
+
     w.Write([]byte(JSONResponse(i)))
 }
 
