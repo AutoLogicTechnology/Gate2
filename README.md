@@ -36,7 +36,11 @@ Using the Gate2 API is very easy. You simply define your configuration file as s
     "database": {
         "engine": "sqlite3",
         "href": "./gates.sql",
-        "setup": true
+        "setup": false
+    },
+    "qrcodes": {
+    	"todisk": true,
+    	"path": "/tmp/"
     }
 }
 ```
