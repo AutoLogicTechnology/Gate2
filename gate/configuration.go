@@ -13,7 +13,7 @@ type GateConfigurationQRCode struct {
 type GateConfigurationDB struct {
     Engine string `json:"engine"`
     Href string `json:"href"`
-    Purge bool `json:"purge"`
+    Setup bool `json:"setup"`
 
     Connection gorm.DB
 }
