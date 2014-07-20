@@ -54,8 +54,9 @@ The API has been designed to offer these endpoints:
 * GET: `/totp/:id/:code`
 * POST: `/totp/:id`
 * DELETE: `/totp/:id`
+* PUT: `/totp/:id`
 
-The PUT HTTP verb is not included as the developer is expected to delete the target user and re-create their entry.
+The `PUT` verb is used to re-calculate a user's secret code, QR code and scratch codes.
 
 ## :id & :code
 
