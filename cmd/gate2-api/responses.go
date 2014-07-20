@@ -44,6 +44,8 @@ type TotpDeleteUserResponse struct {
 type TotpUpdateUserResponse struct {
     Result string `json:"result"`
     Message string `json:"message"`
+    QRCode string `json:"qrcode"`
+    ScratchCodes []string `json:"scratchcodes"`
 }
 
 type StatusUserResponse struct {
