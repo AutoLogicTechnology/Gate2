@@ -18,12 +18,14 @@ type User struct {
 
 type ScratchCode struct {
     Id int64
+    UserId int64 
     CreatedAt time.Time 
     Code string `sql:"size:255"`
 }
 
 type QRCode struct {
     Id int64 
+    UserId int64 
     CreatedAt time.Time 
     Base64 string 
 }

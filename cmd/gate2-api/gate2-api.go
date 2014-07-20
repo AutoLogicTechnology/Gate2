@@ -56,6 +56,7 @@ func main () {
     goji.Get("/totp/:id/:code", TotpValidateUser)
     goji.Post("/totp/:id", TotpCreateUser)
     goji.Delete("/totp/:id", TotpDeleteUser)
+    goji.Put("/top/:id", TotpUpdateUser)
 
     goji.Serve()
 }
@@ -68,6 +69,7 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     userid := c.URLParams["id"]
 
     if !gate.IsValidUserId(userid) {
+        i.Result = "Failure"
         i.Message = "Invalid user ID given"
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
@@ -77,6 +79,7 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
 
     if result.Error == nil {
+        i.Result = "Failure"
         i.Message = "That user already exists"
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
@@ -99,14 +102,20 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     result = g2config.Database.Connection.Create(&newuser)
 
     if result.Error != nil {
+        i.Result = "Failure"
         i.Message = fmt.Sprintf("Unable to add new user: %s (error: %s)", userid, result.Error)
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
 
+    i.Result = "Success"
     i.Message = "User added to the database successfully."
     i.QRCode = newuser.QRCode.Base64
     i.ScratchCodes = newgate.ScratchCodes
+
+    if g2config.QRCode.WriteToDisk {
+        newgate.WritePngToFile(g2config.QRCode.Path + "/" + newgate.UserID + ".png")
+    }
 
     w.Write([]byte(JSONResponse(i)))
 }
@@ -121,12 +130,14 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     totpcode := c.URLParams["code"]
 
     if !gate.IsValidUserId(userid) {
+        i.Result = "Failure"
         i.Message = "Invalid user ID given"
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
 
     if !gate.IsValidTOTPCode(totpcode) {
+        i.Result = "Failure"
         i.Message = "Invalid TOTP code given"
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
@@ -136,26 +147,43 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
 
     if result.Error != nil {
+        i.Result = "Failure"
         i.Message = fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error)
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     }
 
-    gate := gate.NewGateWithCustomSecret(userid, user.UserSecret)
+    fmt.Printf("User: %+v\n", user)
+
+    gate := gate.NewGateWithCustomSecret(user.UserID, user.UserSecret)
+
+    for _, v := range user.ScratchCodes {
+        gate.ScratchCodes = append(gate.ScratchCodes, v.Code)
+    }
+
+    fmt.Printf("Validate: ScratchCodes: %+v", gate.ScratchCodes)
 
     isvalid, _ := gate.CheckCode(totpcode)
 
     if !isvalid {
+        i.Result = "Failure"
         i.Message = "TOTP code is invalid"
         http.Error(w, JSONResponse(i), http.StatusForbidden)
         return 
     }
 
+    i.Result = "Success"
     i.Message = "TOTP code is valid"
     w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
+    i := TotpDeleteUserResponse {Message: "Not Implemented Yet",}
+    w.Header().Set("Content-Type", "application/json")
+    w.Write([]byte(JSONResponse(i)))
+}
+
+func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     i := TotpDeleteUserResponse {Message: "Not Implemented Yet",}
     w.Header().Set("Content-Type", "application/json")
     w.Write([]byte(JSONResponse(i)))

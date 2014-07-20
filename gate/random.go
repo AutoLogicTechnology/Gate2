@@ -28,6 +28,18 @@ func NewSecretCode () (string) {
 }
 
 func NewScratchCode () (string) {
-    return RandomString("0123456789")[:8]
+    var s string 
+
+    for {
+        s = RandomString("0123456789")[:8]
+
+        // s[0] has to be >= 1 for it to be a valid
+        // scratch code 
+        if !(s[0] == '0') {
+            break 
+        }
+    }
+
+    return s
 }
 

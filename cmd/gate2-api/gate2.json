@@ -3,5 +3,9 @@
         "engine": "sqlite3",
         "href": "./gates.sql",
         "purge": true
+    },
+    "qrcodes": {
+    	"todisk": true,
+    	"path": "/tmp/"
     }
 }

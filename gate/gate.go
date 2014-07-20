@@ -55,6 +55,15 @@ func NewGateAndQRCode (userid string) (g *Gate) {
 }
 
 func NewGateWithCustomSecret (userid, usersecret string) (g *Gate) {
+    g = NewGate(userid)
+    g.UserSecret = usersecret
+    g.OTP.Secret = base32.StdEncoding.EncodeToString([]byte(usersecret)) 
+    g.ScratchCodes = nil
+
+    return g 
+}
+
+func NewGateWithCustomSecretQRCode (userid, usersecret string) (g *Gate) {
     g = NewGateAndQRCode(userid)
     g.UserSecret = usersecret
 
