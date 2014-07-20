@@ -36,7 +36,7 @@ Using the Gate2 API is very easy. You simply define your configuration file as s
     "database": {
         "engine": "sqlite3",
         "href": "./gates.sql",
-        "purge": true
+        "setup": true
     }
 }
 ```
@@ -62,10 +62,86 @@ The `:id` field can be basically anything that matches the regular expression `^
 All responses are returned as JSON. XML is not an option. An example of POSTing to `/totp/:id` can be seen below. Not that the `qrcode` field has been left truncated due to the size of a Base63 encoded PNG file.
 
 ```json
-{"message":"User added to the database successfully.","qrcode":"...","scratchcodes":["18036472","16892073","91460278"]}
+{
+	"message":"User added to the database successfully.",
+	"qrcode":"...",
+	"scratchcodes":[
+		"18036472",
+		"16892073",
+		"91460278"
+	]
+}
 ```
 
 This structure is very likely to change in the near future.
+
+## Status
+
+There is a `status` endpoint which will give you the status of a user and that user's scratch codes:
+
+* GET: `/status/:id`
+
+# cURL Examples
+
+Here are some examples of the API being used.
+
+## Add a user
+
+```bash
+$ curl -sXPOST localhost:8000/totp/mcrilly
+```
+
+Resulting in:
+
+```json
+{
+	"message":"User added to the database successfully.",
+	"qrcode":"...",
+	"scratchcodes":[
+		"18036472",
+		"16892073",
+		"91460278"
+	]
+}
+```
+
+## Validate a user scratch code
+
+```bash
+$ curl -sXGET localhost:8000/status/mcrilly | python -mjson.tool
+```
+
+Resulting in:
+
+```json
+{
+    "created": "2014-07-20 18:45:37.489435612 +0000 UTC",
+    "generation": 0,
+    "message": "User statistics",
+    "result": "Success",
+    "scratchcodes": [
+        "18036472",
+		"16892073",
+		"91460278"
+    ],
+    "userid": "mcrilly"
+}
+```
+
+## Deleting a user
+
+```bash
+$ curl -sXDELETE localhost:8000/totp/mcrilly | python -mjson.tool
+```
+
+Resulting in:
+
+```json
+{
+    "message": "The user has been deleted",
+    "result": "Success"
+}
+```
 
 # Bugs
 
