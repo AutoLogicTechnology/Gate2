@@ -108,24 +108,17 @@ Resulting in:
 ## Validate a user scratch code
 
 ```bash
-$ curl -sXGET localhost:8000/status/mcrilly | python -mjson.tool
+$ curl -sXGET localhost:8000/totp/mcrilly/91460278 | python -mjson.tool
 ```
 
 Resulting in:
 
 ```json
 {
-    "created": "2014-07-20 18:45:37.489435612 +0000 UTC",
-    "generation": 0,
-    "message": "User statistics",
-    "result": "Success",
-    "scratchcodes": [
-        "18036472",
-		"16892073",
-		"91460278"
-    ],
-    "userid": "mcrilly"
+    "message": "TOTP Scratch Code is valid",
+    "result": "Success"
 }
+
 ```
 
 ## Deleting a user
