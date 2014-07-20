@@ -2,7 +2,7 @@
     "database": {
         "engine": "sqlite3",
         "href": "./gates.sql",
-        "setup": false
+        "setup": true
     },
     "qrcodes": {
     	"todisk": true,
