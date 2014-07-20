@@ -8,6 +8,11 @@ import (
     "github.com/AutoLogicTechnology/Gate2/gate"
 )
 
+func JSONResponse (response interface{}) (string) {
+    j, _ := json.Marshal(response)
+    return string(j)
+}
+
 type IndexResponse struct {
     Result string `json:"result"`
     Message string `json:"message"`
@@ -41,7 +46,11 @@ type TotpUpdateUserResponse struct {
     Message string `json:"message"`
 }
 
-func JSONResponse (response interface{}) (string) {
-    j, _ := json.Marshal(response)
-    return string(j)
+type StatusUserResponse struct {
+    Result string `json:"result"`
+    Message string `json:"message"`
+    UserID string `json:"userid"`
+    Created string `json:"created"`
+    Generation int64 `json:"generation"`
+    ScratchCodes []string `json:"scratchcodes"`
 }
