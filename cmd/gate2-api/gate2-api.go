@@ -62,6 +62,7 @@ func main () {
     goji.Delete("/totp/:id", TotpDeleteUser)
     goji.Put("/totp/:id", TotpUpdateUser)
 
+    // goji.Get("/status", StatusSystem)
     goji.Get("/status/:id", StatusUser)
 
     goji.Serve()
@@ -70,22 +71,18 @@ func main () {
 func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
-    i := TotpCreateUserResponse{}
-
     userid := c.URLParams["id"]
     if !gate.IsValidUserId(userid) {
-        i.Result = "Failure"
-        i.Message = "Invalid user ID given"
+        i, _ := NewGenericResponse("Failure", "Invalid user ID given")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
 
-    var user gate.User 
-    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
+    var user gate.User
 
+    result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error == nil {
-        i.Result = "Failure"
-        i.Message = "That user already exists"
+        i, _ := NewGenericResponse("Failure", "That user already exists")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
@@ -105,18 +102,13 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     }
 
     result = g2config.Database.Connection.Create(&newuser)
-
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to add new user: %s (error: %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to add new user: %s (error: %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return 
     }
 
-    i.Result = "Success"
-    i.Message = "User added to the database successfully."
-    i.QRCode = newuser.QRCode.Base64
-    i.ScratchCodes = newgate.ScratchCodes
+    i, _ := NewTotpResponse("Success", "User created", newuser.QRCode.Base64, newgate.ScratchCodes)
 
     if g2config.QRCode.WriteToDisk {
         newgate.WritePngToFile(g2config.QRCode.Path + "/" + newgate.UserID + ".png")
@@ -128,21 +120,17 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
-    i := TotpValidateUserResponse {}
-
     userid := c.URLParams["id"]
     totpcode := c.URLParams["code"]
 
     if !gate.IsValidUserId(userid) {
-        i.Result = "Failure"
-        i.Message = "Invalid user ID given"
+        i, _ := NewGenericResponse("Failure", "Invalid user ID given")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
 
     if !gate.IsValidTOTPCode(totpcode) {
-        i.Result = "Failure"
-        i.Message = "Invalid TOTP code given"
+        i, _ := NewGenericResponse("Failure", "Invalid TOTP code given")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
@@ -152,16 +140,15 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to add new user: %s (error: %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     }
 
     result = g2config.Database.Connection.Where(&gate.ScratchCode{UserId: user.Id}).Find(&codes)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find scratch codes for that userid: %s (error: %s)", userid, result.Error)
+        msg := fmt.Sprintf("Unable to find scratch codes for that userid: %s (error: %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", msg)
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     } 
@@ -174,22 +161,19 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
         g.OTP.ScratchCodes = append(g.OTP.ScratchCodes, toint)
     }
 
-    fmt.Printf("Gate: %+v\n", g.OTP)
-
     isvalid, _ := g.CheckCode(totpcode)
     if !isvalid {
-        i.Result = "Failure"
-        i.Message = "TOTP code is invalid"
+        i, _ := NewGenericResponse("Failure", "TOTP code is invalid")
 
         if len(totpcode) >= 8 {
-            i.Message = "TOTP Scratch Code is valid"
+            i.Message = "TOTP Scratch Code is invalid"
         }
 
         http.Error(w, JSONResponse(i), http.StatusForbidden)
         return 
     }
 
-    i.Message = "TOTP code is valid"
+    i, _ := NewGenericResponse("Success", "TOTP code is valid")
 
     if len(totpcode) >= 8 {
         // Scratch code: needs to be deleted
@@ -201,20 +185,16 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
         i.Message = "TOTP Scratch Code is valid"
     }
 
-    i.Result = "Success"
     w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
-    i := TotpDeleteUserResponse{}
-
     userid := c.URLParams["id"]
 
     if !gate.IsValidUserId(userid) {
-        i.Result = "Failure"
-        i.Message = "Invalid user ID given"
+        i, _ := NewGenericResponse("Failure", "Invalid user ID given")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
@@ -223,8 +203,7 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     }
@@ -233,20 +212,16 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
     g2config.Database.Connection.Delete(&gate.QRCode{UserId: user.Id})
     g2config.Database.Connection.Delete(&gate.ScratchCode{UserId: user.Id})
 
-    i.Result = "Success"
-    i.Message = "The user has been deleted"
+    i, _ := NewGenericResponse("Success", "User deleted")
     w.Write([]byte(JSONResponse(i)))
 }
 
 func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
-    i := TotpUpdateUserResponse{}
-    
     userid := c.URLParams["id"]
     if !gate.IsValidUserId(userid) {
-        i.Result = "Failure"
-        i.Message = "Invalid user ID given"
+        i, _ := NewGenericResponse("Failure", "Invalid user ID given")
         http.Error(w, JSONResponse(i), http.StatusBadRequest)
         return
     }
@@ -255,8 +230,7 @@ func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to find that userid: %s (error: %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     }
@@ -273,6 +247,7 @@ func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     user.ScratchCodes = nil
     g2config.Database.Connection.Delete(&user.QRCode)
 
+    i, _ := NewTotpResponse("Success", "User updated", user.QRCode.Base64, []string{""})
     g := gate.NewGateAndQRCode(user.UserID)
     
     user.Generation++
@@ -280,23 +255,18 @@ func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     user.QRCode = gate.QRCode{UserId: user.Id, Base64: g.QRCode,}
 
     for _, v := range g.ScratchCodes {
-        user.ScratchCodes = append(user.ScratchCodes, gate.ScratchCode{UserId: user.Id, Code: v,})
+        g := gate.ScratchCode{UserId: user.Id, Code: v,}
+        user.ScratchCodes = append(user.ScratchCodes, g)
+        i.ScratchCodes = append(i.ScratchCodes, g.String())
     }
 
     g2config.Database.Connection.Save(&user)
-
-    i.Result = "Success"
-    i.Message = "User updated with new a secret and scratch codes"
-    i.QRCode = g.QRCode
-    i.ScratchCodes = g.ScratchCodes
 
     w.Write([]byte(JSONResponse(i)))
 }
 
 func StatusUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
-
-    i := StatusUserResponse{}
 
     userid := c.URLParams["id"]
 
@@ -305,28 +275,22 @@ func StatusUser (c web.C, w http.ResponseWriter, r *http.Request) {
 
     result := g2config.Database.Connection.Where(&gate.User{UserID: userid}).First(&user)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     }
 
     result = g2config.Database.Connection.Where(&gate.ScratchCode{UserId: user.Id}).Find(&codes)
     if result.Error != nil {
-        i.Result = "Failure"
-        i.Message = fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error)
+        i, _ := NewGenericResponse("Failure", fmt.Sprintf("Unable to find that userid: %s (error %s)", userid, result.Error))
         http.Error(w, JSONResponse(i), http.StatusNotFound)
         return 
     } 
 
-    i.Result = "Success"
-    i.Message = "User statistics"
-    i.UserID = user.UserID 
-    i.Created = user.CreatedAt.String()
-    i.Generation = user.Generation
+    i, _ := NewStatusResponse("Success", "User statistics", user.UserID, user.CreatedAt.String(), user.Generation, []string{""})
 
     for _, v := range codes {
-        i.ScratchCodes = append(i.ScratchCodes, v.Code)
+        i.ScratchCodes = append(i.ScratchCodes, v.String())
     }
 
     w.Write([]byte(JSONResponse(i)))
