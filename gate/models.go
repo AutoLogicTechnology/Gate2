@@ -23,6 +23,10 @@ type ScratchCode struct {
     Code string `sql:"size:255"`
 }
 
+func (s ScratchCode) String() (string) {
+    return s.Code 
+}
+
 type QRCode struct {
     Id int64 
     UserId int64 
