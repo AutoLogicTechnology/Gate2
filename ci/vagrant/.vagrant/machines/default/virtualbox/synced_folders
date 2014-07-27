@@ -1,0 +1,1 @@
+{"virtualbox":{"/vagrant":{"guestpath":"/vagrant","hostpath":"/Users/mcrilly/Documents/Go/src/github.com/AutoLogicTechnology/Gate2/ci/vagrant","disabled":false},"/srv/salt":{"guestpath":"/srv/salt","hostpath":"/Users/mcrilly/Documents/Go/src/github.com/AutoLogicTechnology/Gate2/ci/vagrant/salt/roots","disabled":false}}}
