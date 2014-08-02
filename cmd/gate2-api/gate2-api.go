@@ -23,32 +23,45 @@ import (
 
 var g2config gate.GateConfiguration
 
-func configuration (filename string) {
+func configuration (filename string) (error) {
     data, err := ioutil.ReadFile(filename)
 
     if err != nil {
-        log.Fatalf("Unable to open the given configuration file: %s\n", filename)
+        log.Printf("Unable to open the given configuration file: %s\n", filename)
+        return err 
     }
 
     err = json.Unmarshal(data, &g2config)
 
     if err != nil {
-        log.Fatalf("Unable to read configuration format for: %s: %s\n", filename, err)
+        log.Printf("Unable to read configuration format for: %s: %s\n", filename, err)
+        return err 
     }
+
+    return nil 
 }
 
 func main () {
-    var err error 
-
     configfile := flag.String("config", "./gate2.json", "Gate2 configuration file. JSON formatted.")
     flag.Parse()
 
-    configuration(*configfile)
+    Birth(*configfile)
+}
+
+func Birth (c string) (error) {
+    var err error 
+
+    err = configuration(c)
+
+    if err != nil {
+        return err
+    }
 
     g2config.Database.Connection, err = gorm.Open(g2config.Database.Engine, g2config.Database.Href)
 
     if err != nil {
-        log.Fatalf("Unable to establish database connection: %s\n", err)
+        log.Printf("Unable to establish database connection: %s\n", err)
+        return err 
     }
 
     if g2config.Database.Setup {
@@ -66,6 +79,8 @@ func main () {
     goji.Get("/status/:id", StatusUser)
 
     goji.Serve()
+
+    return nil
 }
 
 func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
