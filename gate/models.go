@@ -10,8 +10,8 @@ type User struct {
     CreatedAt time.Time
     UpdatedAt time.Time  
     Generation int64 
-    UserID string `sql:"size:255"`
-    UserSecret string `sql:"size:255"`
+    UserID string
+    UserSecret string
     QRCode QRCode 
     ScratchCodes []ScratchCode
 }
@@ -20,7 +20,7 @@ type ScratchCode struct {
     Id int64
     UserId int64 
     CreatedAt time.Time 
-    Code string `sql:"size:255"`
+    Code string
 }
 
 func (s ScratchCode) String() (string) {
