@@ -4,9 +4,7 @@ package main
 import (
     "log"
     "net/http"
-    "encoding/json"
     "flag"
-    "io/ioutil"
     "fmt"
     "strconv"
 
@@ -21,29 +19,25 @@ import (
     "github.com/zenazn/goji/web"
 )
 
-var g2config gate.GateConfiguration
+var g2config *gate.GateConfiguration
 
-func configuration (filename string) {
-    data, err := ioutil.ReadFile(filename)
-
-    if err != nil {
-        log.Fatalf("Unable to open the given configuration file: %s\n", filename)
-    }
-
-    err = json.Unmarshal(data, &g2config)
-
-    if err != nil {
-        log.Fatalf("Unable to read configuration format for: %s: %s\n", filename, err)
-    }
-}
-
-func main () {
+func main() {
     var err error 
 
     configfile := flag.String("config", "./gate2.json", "Gate2 configuration file. JSON formatted.")
     flag.Parse()
 
-    configuration(*configfile)
+    g2config, err = gate.NewGateConfiguration(*configfile)
+
+    if err != nil {
+        log.Fatalf("Failed to open %s: %s", *configfile, err)
+    }
+
+    MainApi()
+}
+
+func MainApi() {
+    var err error 
 
     g2config.Database.Connection, err = gorm.Open(g2config.Database.Engine, g2config.Database.Href)
 
@@ -62,13 +56,12 @@ func main () {
     goji.Delete("/totp/:id", TotpDeleteUser)
     goji.Put("/totp/:id", TotpUpdateUser)
 
-    // goji.Get("/status", StatusSystem)
     goji.Get("/status/:id", StatusUser)
 
     goji.Serve()
 }
 
-func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
+func TotpCreateUser(c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     userid := c.URLParams["id"]
@@ -117,7 +110,7 @@ func TotpCreateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(JSONResponse(i)))
 }
 
-func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
+func TotpValidateUser(c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     userid := c.URLParams["id"]
@@ -188,7 +181,7 @@ func TotpValidateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(JSONResponse(i)))
 }
 
-func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
+func TotpDeleteUser(c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     userid := c.URLParams["id"]
@@ -216,7 +209,7 @@ func TotpDeleteUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(JSONResponse(i)))
 }
 
-func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
+func TotpUpdateUser(c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     userid := c.URLParams["id"]
@@ -265,7 +258,7 @@ func TotpUpdateUser (c web.C, w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(JSONResponse(i)))
 }
 
-func StatusUser (c web.C, w http.ResponseWriter, r *http.Request) {
+func StatusUser(c web.C, w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     userid := c.URLParams["id"]
