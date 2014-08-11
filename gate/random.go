@@ -9,7 +9,7 @@ import (
 // This might be a poor means of doing this
 // Potentially better(?) ways have been found
 // online, but this seems random enough for now 
-func RandomString (string_range string) (string) {
+func RandomString(string_range string) (string) {
     suitable := []byte(string_range)
 
     r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -23,11 +23,17 @@ func RandomString (string_range string) (string) {
     return string(s)
 }
 
-func NewSecretCode () (string) {
+func NewSecretCode() (string) {
     return RandomString("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!$%^&*()_-.,<>?'")[:16]
 }
 
-func NewScratchCode () (string) {
+// Scratch codes are to be replaced with much
+// bigger random strings of letters and numbers.
+// These SCs are a bit basic and weak.
+// The SC process should be removed from the 
+// TOTP protocol, in my opinion, so this is
+// where I will go, but for now... 
+func NewScratchCode() (string) {
     var s string 
 
     for {

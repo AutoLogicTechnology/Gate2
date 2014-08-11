@@ -7,6 +7,7 @@ import (
     "flag"
     "fmt"
     "strconv"
+    "errors"
 
     "github.com/AutoLogicTechnology/Gate2/gate"
 
@@ -33,16 +34,25 @@ func main() {
         log.Fatalf("Failed to open %s: %s", *configfile, err)
     }
 
-    MainApi()
+    err = MainApi()
+
+    if err != nil {
+        log.Fatalf("Error running calling main API: %s", err)
+    } else {
+        log.Print("API done.")
+    }
 }
 
-func MainApi() {
+func MainApi() (error) {
     var err error 
+
+    if g2config == nil {
+        return errors.New("Configuration has not been established.")
+    }
 
     g2config.Database.Connection, err = gorm.Open(g2config.Database.Engine, g2config.Database.Href)
 
     if err != nil {
-        log.Printf("Unable to establish database connection: %s\n", err)
         return err 
     }
 

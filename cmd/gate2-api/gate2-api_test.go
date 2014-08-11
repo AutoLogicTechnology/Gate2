@@ -3,10 +3,10 @@ package main
 
 import "testing"
 
-func TestBirth (t *testing.T) {
-    err := Birth("FakeFile.conf.fake")
+func TestMainApi (t *testing.T) {
+    err := MainApi()
 
     if err == nil {
-        t.Errorf("Birth() is not handling invalid files correctly")
+        t.Error("MainApi() hasn't handled the lack of configuration correctly")
     }
 }
